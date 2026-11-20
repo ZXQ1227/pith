@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Pith</string>
+    <key>CFBundleDisplayName</key>
+    <string>Pith</string>
+    <key>CFBundleIdentifier</key>
+    <string>app.pith.desktop</string>
+    <key>CFBundleExecutable</key>
+    <string>Pith</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.5.1</string>
+    <key>CFBundleVersion</key>
+    <string>10</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Pith 使用麦克风将你的语音转换为文本。</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Pith 使用 macOS 语音识别将录音转换为文字。设备不支持本地识别时，Apple 可能在线处理录音；文字随后发送到你配置的模型进行整理。</string>
+</dict>
+</plist>

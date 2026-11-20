@@ -1,0 +1,9 @@
+.build/
+.cache/
+dist/
+*.xcuserstate
+.DS_Store
+
+# Internal development notes (not published)
+docs/internal/
+memory/
