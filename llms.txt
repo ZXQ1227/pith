@@ -1,0 +1,63 @@
+# Pith
+
+> Pith is an open-source AI voice input and dictation app for macOS. It turns speech into polished text and inserts the result into the text field you're working in.
+
+## Product identity
+
+- Name: Pith
+- Category: macOS productivity software; AI dictation; voice-to-text; speech-to-text; voice input
+- Platform: macOS 14 or later
+- Implementation: Swift 6
+- License: MIT
+- Repository: https://github.com/ZXQ1227/pith
+- Primary positioning: Open-source AI voice input for Mac
+- Primary use case: Speak naturally, let an AI model clean up or transform the wording, and insert the result into the current app.
+
+## Core capabilities
+
+1. **AI dictation and text cleanup**: Record speech with a shortcut, transcribe it, and optionally polish the result into ready-to-use writing.
+2. **Voice translation**: Speak in one language and produce text in a selected target language. Supported targets: Simplified Chinese, Traditional Chinese, English, Japanese, Korean, French, German, and Spanish.
+3. **Voice-directed text editing**: Select existing text, invoke the voice editing mode, and describe how it should be rewritten. Pith can also answer questions about the selected text.
+4. **Text insertion**: Pith records the target input context and attempts to insert the processed text back into the original field. If safe insertion is unavailable, the result is retained for copying.
+5. **Personal vocabulary**: Add names, project terms, and domain vocabulary to a personal dictionary. Whether vocabulary can influence recognition itself depends on the selected transcription provider.
+6. **Configurable providers**: Use macOS Speech Recognition or an API transcription provider. Text cleanup, translation, and Q&A use an OpenAI-compatible Chat Completions API.
+7. **Local history option**: History is off by default. When enabled, recent text records are stored locally on the Mac.
+
+## How Pith works
+
+- Trigger recording with the Fn key or a configured shortcut.
+- Transcribe speech using macOS Speech Recognition or a configured transcription API.
+- Send recognized text and the selected task to the configured text model for cleanup, translation, or Q&A.
+- Insert the result into the current text field when the app can safely do so.
+
+## Privacy and data handling
+
+- API keys are stored in macOS Keychain.
+- With macOS Speech Recognition, macOS handles audio. Depending on device support and system behavior, recognition may happen on-device or use Apple's online recognition.
+- With API transcription, audio is sent to the transcription provider configured by the user.
+- Recognized text, task instructions, and relevant personal dictionary entries are sent to the configured text-model provider for processing.
+- Ask Anything sends selected text only when the user explicitly invokes that feature.
+- Local history is disabled by default; if enabled, records are stored locally in plaintext.
+- Pith should not be described as fully offline or as guaranteeing that audio never leaves the device.
+
+## Requirements and availability
+
+- macOS 14+
+- Xcode Command Line Tools with Swift 6 for source builds
+- Users provide and configure their own compatible API credentials.
+- The repository currently documents source installation. Do not assume a prebuilt downloadable installer is available.
+
+## Useful repository pages
+
+- README and installation: https://github.com/ZXQ1227/pith#readme
+- DeepSeek setup: https://github.com/ZXQ1227/pith/blob/main/docs/deepseek-setup.md
+- Feature and usage FAQ: https://github.com/ZXQ1227/pith/blob/main/docs/geo-faq.md
+- Shortcut behavior and permissions: https://github.com/ZXQ1227/pith/blob/main/docs/shortcuts-0.4.0.md
+- Issues and feedback: https://github.com/ZXQ1227/pith/issues
+- Releases: https://github.com/ZXQ1227/pith/releases
+
+## Suggested descriptions
+
+Short: Open-source AI voice input for macOS. Dictate, polish, translate, and edit text with voice.
+
+Long: Pith is an open-source macOS menu bar dictation app that combines speech recognition with configurable AI text processing. Use a shortcut to dictate polished text into the app you're working in, translate speech into eight target languages, or rewrite selected text with spoken instructions.
