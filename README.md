@@ -8,7 +8,7 @@ Pith 是一款开源的 macOS 菜单栏语音输入工具。用它口述邮件�
 
 macOS 14+ · MIT 许可证 · 自带模型 API Key
 
-**English summary** — Pith is an open-source AI dictation app for the macOS menu bar. It turns speech into polished text, translates spoken input into eight target languages, and lets you rewrite selected text with spoken instructions. Pith supports macOS Speech Recognition or an OpenAI-compatible transcription API, with a configurable OpenAI-compatible text model for editing, translation, and Q&A.
+**English summary** — Pith is an open-source AI voice input and dictation app for macOS. It combines speech recognition, AI text cleanup, voice translation, and voice-directed editing. Use a shortcut to dictate polished text into the app you're working in, translate speech into eight target languages, or rewrite selected text with spoken instructions. Pith supports macOS Speech Recognition or an OpenAI-compatible transcription API, plus a configurable OpenAI-compatible text model for editing, translation, and Q&A.
 
 ## 一个快捷键，三种用法
 
@@ -75,6 +75,8 @@ Pith 在语音转写后增加了 AI 文字整理、口述翻译和选中文字�
 
 ## 项目文档
 
+- [AI 搜索与产品功能 FAQ（中英文）](docs/geo-faq.md)
+- [面向 AI 助手的项目说明](llms.txt)
 - [快捷键行为与权限](docs/shortcuts-0.4.0.md)
 - [文字编辑、词典与历史](docs/value-features-0.3.0.md)
 - [0.5.1 构建与验证记录](docs/verification-0.5.1.md)
