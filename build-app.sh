@@ -9,9 +9,16 @@ if [[ "$APP_DIR" != /* || "$APP_DIR" != *.app ]]; then
     exit 1
 fi
 
-swift build --package-path "$ROOT_DIR" --scratch-path "$BUILD_DIR" --cache-path "$ROOT_DIR/.cache" --manifest-cache local -c release
+# Sandboxed environments (CI jobs, restricted shells) block swift-build's
+# sandbox-exec. Set PITH_DISABLE_SANDBOX=1 to build without it.
+SWIFT_SANDBOX_FLAGS=()
+if [[ "${PITH_DISABLE_SANDBOX:-0}" == "1" ]]; then
+    SWIFT_SANDBOX_FLAGS=(--disable-sandbox)
+fi
+
+swift build --package-path "$ROOT_DIR" --scratch-path "$BUILD_DIR" --cache-path "$ROOT_DIR/.cache" --manifest-cache local "${SWIFT_SANDBOX_FLAGS[@]}" -c release
 mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
-BIN_DIR="$(swift build --package-path "$ROOT_DIR" --scratch-path "$BUILD_DIR" --cache-path "$ROOT_DIR/.cache" --manifest-cache local -c release --show-bin-path)"
+BIN_DIR="$(swift build --package-path "$ROOT_DIR" --scratch-path "$BUILD_DIR" --cache-path "$ROOT_DIR/.cache" --manifest-cache local "${SWIFT_SANDBOX_FLAGS[@]}" -c release --show-bin-path)"
 cp "$BIN_DIR/Pith" "$APP_DIR/Contents/MacOS/Pith"
 cp "$ROOT_DIR/Resources/Info.plist" "$APP_DIR/Contents/Info.plist"
 # Finder and synced folders can attach metadata that codesign rejects, even to a new bundle.

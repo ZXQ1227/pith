@@ -35,16 +35,32 @@ macOS 14+ · MIT 许可证 · 自带模型 API Key
 
 ## 下载与安装
 
-当前版本可从源码构建，GitHub Releases 暂无预编译安装包。
+### 方式一：下载 DMG 安装包（推荐）
+
+从 [GitHub Releases](https://github.com/ZXQ1227/pith/releases) 下载最新版本的 `Pith.dmg`，打开后把 **Pith** 拖入 **Applications** 文件夹即可。
+
+- **需要** macOS 14 或更新版本，以及支持 OpenAI 兼容 Chat Completions 接口的模型配置。
+- 安装包为 ad-hoc 签名，首次打开若被 Gatekeeper 拦截：右键点击 **Pith.app → 打开**，或在「系统设置 → 隐私与安全性」中选择「仍要打开」。
+
+### 方式二：从源码构建
 
 **需要** macOS 14 或更新版本、带 Swift 6 的 Xcode Command Line Tools，以及支持 OpenAI 兼容 Chat Completions 接口的模型配置。
 
 ```sh
 git clone https://github.com/ZXQ1227/pith.git
 cd pith
+bash build-dmg.sh /private/tmp/pith-release/Pith.dmg
+open /private/tmp/pith-release/Pith.dmg
+```
+
+也可以只构建 App：
+
+```sh
 bash build-app.sh /private/tmp/pith-release/Pith.app
 open /private/tmp/pith-release/Pith.app
 ```
+
+> 提示：维护者发布新版本时，推送 `v*` 格式的 tag（如 `v0.5.2`），GitHub Actions 会自动构建 DMG 并附加到对应的 Release（见 `.github/workflows/release.yml`）。
 
 1. 在菜单栏打开 **Pith → 设置…**，选择语音识别方式，填写 API Base URL、文本模型和 API Key。
 2. 按 macOS 提示授予麦克风权限。使用系统转写时还需允许语音识别。使用 `Fn` 快捷键、选区读取和自动回填时，需允许辅助功能权限。
