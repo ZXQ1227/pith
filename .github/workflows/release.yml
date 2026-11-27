@@ -11,7 +11,9 @@ permissions:
 
 jobs:
   build-dmg:
-    runs-on: macos-15
+    # macos-26 ships Xcode 26 (Swift 6.3); macos-15's Swift 6.1 does not
+    # support the 'isolated deinit' feature used in PithApp sources.
+    runs-on: macos-26
     steps:
       - name: Checkout
         uses: actions/checkout@v4
