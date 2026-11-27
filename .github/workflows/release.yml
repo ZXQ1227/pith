@@ -22,7 +22,20 @@ jobs:
           swift --version
 
       - name: Build DMG
-        run: bash build-dmg.sh "$GITHUB_WORKSPACE/Pith.dmg"
+        run: |
+          sw_vers
+          bash build-dmg.sh "$GITHUB_WORKSPACE/Pith.dmg" 2>&1 | tee build.log
+
+      - name: Diagnose on failure
+        if: failure()
+        run: |
+          {
+            echo "## Build DMG failure log"
+            echo ""
+            echo '```'
+            tail -100 build.log 2>/dev/null || echo "(no build.log)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
