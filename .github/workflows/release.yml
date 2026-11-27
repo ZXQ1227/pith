@@ -52,17 +52,12 @@ jobs:
       - name: Dump diagnostics as annotations
         if: failure()
         run: |
-          {
-            echo "pwd: $(pwd)"
-            echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-            echo "--- ls -la workspace ---"
-            ls -la "$GITHUB_WORKSPACE" || true
-            echo "--- ls -la dist ---"
-            ls -la "$GITHUB_WORKSPACE/dist" || true
-            echo "--- find dmg under home ---"
-            find "$HOME" -maxdepth 6 -name '*.dmg' 2>/dev/null | head -20
-            echo "--- build.log tail ---"
-            tail -40 build.log 2>/dev/null || echo "(no build.log)"
-          } 2>&1 | while IFS= read -r line; do
-            echo "::warning::diag: $line"
+          echo "::warning::diag: pwd=$(pwd) ws=$GITHUB_WORKSPACE"
+          echo "::warning::diag: ls-workspace: $(ls "$GITHUB_WORKSPACE" 2>&1 | tr '\n' ' ')"
+          echo "::warning::diag: ls-dist: $(ls -la "$GITHUB_WORKSPACE/dist" 2>&1 | tr '\n' ' ')"
+          echo "::notice::diag: find-dmg: $(find "$GITHUB_WORKSPACE" -name '*.dmg' 2>/dev/null | tr '\n' ' ')"
+          echo "::notice::diag: find-dmg-tmp: $(find /private/tmp -maxdepth 4 -name '*.dmg' 2>/dev/null | tr '\n' ' ')"
+          echo "::notice::diag: find-work: $(find "$GITHUB_WORKSPACE" -maxdepth 2 -newer "$GITHUB_WORKSPACE/Package.swift" -type f 2>/dev/null | head -20 | tr '\n' ' ')"
+          tail -n 30 build.log 2>/dev/null | while IFS= read -r line; do
+            echo "::error::log: $line"
           done
