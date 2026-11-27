@@ -9,6 +9,11 @@ on:
 permissions:
   contents: write
 
+env:
+  # Universal binary: Apple Silicon + Intel. build-app.sh builds each slice
+  # separately and merges with lipo.
+  PITH_ARCHS: "arm64 x86_64"
+
 jobs:
   build-dmg:
     # macos-26 ships Xcode 26 (Swift 6.3); macos-15's Swift 6.1 does not
@@ -23,7 +28,60 @@ jobs:
           xcode-select -p
           swift --version
 
+      - name: Check icon asset
+        run: |
+          if [ ! -f Resources/AppIcon.icns ]; then
+            echo "::error::Resources/AppIcon.icns is missing. Generate it with: python3 tools/make-icon.py"
+            exit 1
+          fi
+          ls -l Resources/AppIcon.icns
+
+      # Signing is optional. Without these secrets the build still succeeds but
+      # the DMG is ad-hoc signed, so Gatekeeper blocks fresh downloads.
+      - name: Detect signing credentials
+        id: signing
+        env:
+          CERT_P12: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+          NOTARY_APPLE_ID: ${{ secrets.MACOS_NOTARY_APPLE_ID }}
+          NOTARY_PASSWORD: ${{ secrets.MACOS_NOTARY_PASSWORD }}
+          NOTARY_TEAM_ID: ${{ secrets.MACOS_NOTARY_TEAM_ID }}
+        run: |
+          if [ -n "$CERT_P12" ] && [ -n "$CERT_PASSWORD" ] && [ -n "$SIGN_IDENTITY" ]; then
+            echo "can_sign=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "can_sign=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No signing secrets; building an ad-hoc signed DMG."
+          fi
+          if [ -n "$NOTARY_APPLE_ID" ] && [ -n "$NOTARY_PASSWORD" ] && [ -n "$NOTARY_TEAM_ID" ]; then
+            echo "can_notarize=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "can_notarize=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Import signing certificate
+        if: steps.signing.outputs.can_sign == 'true'
+        env:
+          CERT_P12: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/pith-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          echo "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$CERT_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/cert.p12"
+
       - name: Build DMG
+        env:
+          PITH_SIGN_IDENTITY: ${{ steps.signing.outputs.can_sign == 'true' && secrets.MACOS_SIGN_IDENTITY || '' }}
         run: |
           sw_vers
           mkdir -p dist
@@ -35,6 +93,60 @@ jobs:
           ls -l "$GITHUB_WORKSPACE/dist/Pith.dmg" 2>&1 | while IFS= read -r line; do
             echo "::notice::dmg: $line"
           done
+
+      # Mount the shipped DMG and assert on what users actually receive,
+      # rather than trusting the build log.
+      - name: Verify DMG contents
+        run: |
+          set -euo pipefail
+          MOUNT="$(mktemp -d)"
+          trap 'hdiutil detach "$MOUNT" -quiet || true' EXIT
+          hdiutil attach dist/Pith.dmg -mountpoint "$MOUNT" -nobrowse -readonly -noautoopen
+
+          APP="$MOUNT/Pith.app"
+          test -d "$APP" || { echo "::error::Pith.app missing from DMG"; exit 1; }
+          test -L "$MOUNT/Applications" || { echo "::error::Applications symlink missing from DMG"; exit 1; }
+
+          FAT_INFO="$(lipo -info "$APP/Contents/MacOS/Pith")"
+          echo "::notice::arch: $FAT_INFO"
+          for ARCH in $PITH_ARCHS; do
+            case "$FAT_INFO" in
+              *"$ARCH"*) ;;
+              *) echo "::error::DMG binary is missing the $ARCH slice: $FAT_INFO"; exit 1 ;;
+            esac
+          done
+
+          test -f "$APP/Contents/Resources/AppIcon.icns" \
+            || { echo "::error::AppIcon.icns missing from app bundle"; exit 1; }
+          ICON_KEY="$(plutil -extract CFBundleIconFile raw "$APP/Contents/Info.plist")"
+          [ "$ICON_KEY" = "AppIcon" ] \
+            || { echo "::error::CFBundleIconFile is '$ICON_KEY', expected 'AppIcon'"; exit 1; }
+
+          codesign --verify --deep --strict "$APP"
+          codesign -dv --verbose=2 "$APP" 2>&1 | sed 's/^/::notice::codesign: /'
+          echo "::notice::DMG verification passed."
+
+      - name: Notarize DMG
+        if: steps.signing.outputs.can_sign == 'true' && steps.signing.outputs.can_notarize == 'true'
+        env:
+          NOTARY_APPLE_ID: ${{ secrets.MACOS_NOTARY_APPLE_ID }}
+          NOTARY_PASSWORD: ${{ secrets.MACOS_NOTARY_PASSWORD }}
+          NOTARY_TEAM_ID: ${{ secrets.MACOS_NOTARY_TEAM_ID }}
+        run: |
+          xcrun notarytool submit dist/Pith.dmg \
+            --apple-id "$NOTARY_APPLE_ID" \
+            --password "$NOTARY_PASSWORD" \
+            --team-id "$NOTARY_TEAM_ID" \
+            --wait
+          xcrun stapler staple dist/Pith.dmg
+          xcrun stapler validate dist/Pith.dmg
+          # Proves Gatekeeper now accepts the download we are about to publish.
+          spctl --assess --type open --context context:primary-signature -v dist/Pith.dmg
+
+      - name: Warn when shipping unsigned
+        if: steps.signing.outputs.can_sign != 'true'
+        run: |
+          echo "::warning::DMG is ad-hoc signed. Users must clear quarantine manually; see README."
 
       - name: Attach DMG to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -59,7 +171,6 @@ jobs:
           echo "::warning::diag: ls-dist: $(ls -la "$GITHUB_WORKSPACE/dist" 2>&1 | tr '\n' ' ')"
           echo "::notice::diag: find-dmg: $(find "$GITHUB_WORKSPACE" -name '*.dmg' 2>/dev/null | tr '\n' ' ')"
           echo "::notice::diag: find-dmg-tmp: $(find /private/tmp -maxdepth 4 -name '*.dmg' 2>/dev/null | tr '\n' ' ')"
-          echo "::notice::diag: find-work: $(find "$GITHUB_WORKSPACE" -maxdepth 2 -newer "$GITHUB_WORKSPACE/Package.swift" -type f 2>/dev/null | head -20 | tr '\n' ' ')"
-          tail -n 30 build.log 2>/dev/null | while IFS= read -r line; do
+          tail -n 40 build.log 2>/dev/null | while IFS= read -r line; do
             echo "::error::log: $line"
           done

@@ -8,6 +8,8 @@
     <string>Pith</string>
     <key>CFBundleIdentifier</key>
     <string>app.pith.desktop</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleExecutable</key>
     <string>Pith</string>
     <key>CFBundlePackageType</key>
