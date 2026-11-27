@@ -39,8 +39,14 @@ macOS 14+ · MIT 许可证 · 自带模型 API Key
 
 从 [GitHub Releases](https://github.com/ZXQ1227/pith/releases) 下载最新版本的 `Pith.dmg`，打开后把 **Pith** 拖入 **Applications** 文件夹即可。
 
-- **需要** macOS 14 或更新版本，以及支持 OpenAI 兼容 Chat Completions 接口的模型配置。
-- 安装包为 ad-hoc 签名，首次打开若被 Gatekeeper 拦截：右键点击 **Pith.app → 打开**，或在「系统设置 → 隐私与安全性」中选择「仍要打开」。
+- **需要** macOS 14 或更新版本（Apple 芯片与 Intel 通用），以及支持 OpenAI 兼容 Chat Completions 接口的模型配置。
+- 安装包为 ad-hoc 签名，未经过 Apple 公证，所以首次打开一定会被 Gatekeeper 拦截。macOS 15 及以上版本已取消「右键 → 打开」的绕过方式，请到「系统设置 → 隐私与安全性」，在页面底部点击「仍要打开」，再回到访达确认。也可以在终端执行：
+
+  ```sh
+  xattr -d com.apple.quarantine /Applications/Pith.app
+  ```
+
+  如果你需要免打扰分发，可以用自己的 Developer ID 签名：`PITH_SIGN_IDENTITY="Developer ID Application: ..." bash build-dmg.sh /path/Pith.dmg`。
 
 ### 方式二：从源码构建
 
@@ -60,7 +66,13 @@ bash build-app.sh /private/tmp/pith-release/Pith.app
 open /private/tmp/pith-release/Pith.app
 ```
 
-> 提示：维护者发布新版本时，推送 `v*` 格式的 tag（如 `v0.5.2`），GitHub Actions 会自动构建 DMG 并附加到对应的 Release（见 `.github/workflows/release.yml`）。
+默认只构建当前 Mac 的架构（本地构建更快）。要产出与 Release 一致的双架构包：
+
+```sh
+PITH_ARCHS="arm64 x86_64" bash build-dmg.sh /private/tmp/pith-release/Pith.dmg
+```
+
+> 提示：维护者发布新版本时，推送 `v*` 格式的 tag（如 `v0.5.2`），GitHub Actions 会自动构建双架构 DMG 并附加到对应的 Release（见 `.github/workflows/release.yml`）。App 图标由 `python3 tools/make-icon.py` 生成到 `Resources/AppIcon.icns`，只需在改动图标时重新运行。
 
 1. 在菜单栏打开 **Pith → 设置…**，选择语音识别方式，填写 API Base URL、文本模型和 API Key。
 2. 按 macOS 提示授予麦克风权限。使用系统转写时还需允许语音识别。使用 `Fn` 快捷键、选区读取和自动回填时，需允许辅助功能权限。
