@@ -26,26 +26,31 @@ jobs:
           sw_vers
           mkdir -p dist
           bash build-dmg.sh "$GITHUB_WORKSPACE/dist/Pith.dmg" 2>&1 | tee build.log
-          {
-            echo "## Workspace listing after build"
-            echo ""
-            echo '```'
-            ls -la "$GITHUB_WORKSPACE"
-            echo ""
-            ls -la "$GITHUB_WORKSPACE/dist"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Diagnose on failure
-        if: failure()
+      - name: Dump diagnostics to ci-debug branch
+        if: always()
         run: |
           {
-            echo "## Build DMG failure log"
-            echo ""
-            echo '```'
-            tail -100 build.log 2>/dev/null || echo "(no build.log)"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+            echo "=== pwd ==="
+            pwd
+            echo "=== GITHUB_WORKSPACE ==="
+            echo "$GITHUB_WORKSPACE"
+            echo "=== ls -la workspace ==="
+            ls -la "$GITHUB_WORKSPACE" || true
+            echo "=== ls -la dist ==="
+            ls -la "$GITHUB_WORKSPACE/dist" || true
+            echo "=== find dmg under home ==="
+            find "$HOME" -maxdepth 6 -name '*.dmg' 2>/dev/null || true
+            echo "=== find dmg under private/tmp ==="
+            find /private/tmp -maxdepth 4 -name '*.dmg' 2>/dev/null || true
+            echo "=== build.log tail ==="
+            tail -80 build.log 2>/dev/null || echo "(no build.log)"
+          } > ci-debug.log
+          git config user.name "ci-debug"
+          git config user.email "action@github.com"
+          git add ci-debug.log
+          git commit -m "ci debug diagnostics [skip ci]" || true
+          git push origin HEAD:ci-debug --force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
